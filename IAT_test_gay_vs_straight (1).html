@@ -1,0 +1,100 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>IAT：同志 vs 異性戀（中文）</title>
+  <script src="https://cdn.jsdelivr.net/npm/jspsych@7.3.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@jspsych/plugin-html-keyboard-response"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@jspsych/plugin-survey-html-form"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f9f9f9;
+    }
+    .stimulus {
+      font-size: 32px;
+      margin: 50px;
+    }
+    .category {
+      font-size: 20px;
+      margin: 10px;
+    }
+  </style>
+</head>
+<body>
+  <script>
+    const jsPsych = initJsPsych({
+      on_finish: () => jsPsych.data.displayData()
+    });
+
+    const timeline = [];
+
+    // 問卷：基本資料收集
+    timeline.push({
+      type: jsPsychSurveyHtmlForm,
+      preamble: '<h3>請填寫以下基本資料</h3>',
+      html: `
+        <p>性別：<select name="gender" required>
+          <option value="">請選擇</option>
+          <option value="男">男</option>
+          <option value="女">女</option>
+          <option value="其他">其他</option>
+        </select></p>
+        <p>年級：<select name="grade" required>
+          <option value="">請選擇</option>
+          <option value="大一">大一</option>
+          <option value="大二">大二</option>
+          <option value="大三">大三</option>
+          <option value="大四">大四</option>
+        </select></p>`
+    });
+
+    const gay_words = ["同志", "同性戀", "男同志", "女同志"];
+    const straight_words = ["異性戀", "正常戀愛", "異性婚姻", "喜歡異性"];
+    const good_words = ["愛", "快樂", "和平", "美好"];
+    const bad_words = ["失敗", "噁心", "邪惡", "可怕"];
+
+    function createTrial(stimulus, correct_key, choices) {
+      return {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: `<div class="stimulus">${stimulus}</div>`,
+        choices: choices,
+        data: {stimulus: stimulus, correct_key: correct_key},
+        on_finish: data => {
+          data.correct = jsPsych.pluginAPI.compareKeys(data.response, data.correct_key);
+        }
+      }
+    }
+
+    function generateBlock(words1, words2, left_label, right_label, left_key, right_key) {
+      const trials = [];
+      const all_words = jsPsych.randomization.shuffle([...words1.map(w => [w, left_key]), ...words2.map(w => [w, right_key])]);
+      for (const [word, key] of all_words) {
+        trials.push(createTrial(word, key, [left_key, right_key]));
+      }
+      return trials;
+    }
+
+    // Block 1：同志 vs 異性戀
+    timeline.push(...generateBlock(gay_words, straight_words, "同志", "異性戀", 'f', 'j'));
+
+    // Block 2：好 vs 壞
+    timeline.push(...generateBlock(good_words, bad_words, "好", "壞", 'f', 'j'));
+
+    // Block 3 & 4：同志+壞 vs 異性戀+好
+    timeline.push(...generateBlock([...gay_words, ...bad_words], [...straight_words, ...good_words], "同志 / 壞", "異性戀 / 好", 'f', 'j'));
+    timeline.push(...generateBlock([...gay_words, ...bad_words], [...straight_words, ...good_words], "同志 / 壞", "異性戀 / 好", 'f', 'j'));
+
+    // Block 5：鍵位對調 異性戀 vs 同志
+    timeline.push(...generateBlock(straight_words, gay_words, "異性戀", "同志", 'f', 'j'));
+
+    // Block 6 & 7：異性戀+壞 vs 同志+好
+    timeline.push(...generateBlock([...straight_words, ...bad_words], [...gay_words, ...good_words], "異性戀 / 壞", "同志 / 好", 'f', 'j'));
+    timeline.push(...generateBlock([...straight_words, ...bad_words], [...gay_words, ...good_words], "異性戀 / 壞", "同志 / 好", 'f', 'j'));
+
+    jsPsych.run(timeline);
+  </script>
+</body>
+</html>
